@@ -1,0 +1,3 @@
+#!/bin/sh
+
+gnome-terminal --hide-menubar --title="Downloading from Emusic" -x $HOME/bin/dromanova.py "$1"
