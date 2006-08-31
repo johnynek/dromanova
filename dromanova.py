@@ -4,18 +4,47 @@ import sys, base64, re, urllib2, os, os.path, urllib, string
 from cStringIO import *
 import xml.parsers.expat
 
+#################################################
 #Configure the script here:
 
+# use:
+# %a -> artist
+# %l -> album
+# %t -> title
+# %n -> track number
+
 #Where do we download the stuff?
-path = os.environ['HOME'] + "/media/mp3/%a/%l"
+base = os.environ['HOME']
+#path is an array to be portable.  It is relative to base, this joined together into a path
+#there should not be an path separator characters in any of the elements of path (e.g. "/" on unix).
+#if there are, they will be replaced with "_".  This is because we don't know if track metadata
+#will contain such characters.
+path = ["media", "mp3", "%a", "%l"]
+#This filenaming standard is good since lexigraphically it will usually do "the right thing"
 filename = "%a-%l-%n-%t.mp3"
 #replace the following characters with underscores
-underscore_chars = " '?[]()"
+underscore_chars = " *+!`'?[]()"
+
+################################################
 
 #####
-# This is part of Dromanova, a python download manager for emusic.
+# This program is part of Dromanova, a python download manager for emusic.
 # (c) P. Oscar Boykin <boykin@pobox.com>
-# This code is licensed under the GPLv2 or later:
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+#
 # http://www.gnu.org/copyleft/gpl.html
 # 
 # The decryption algorithm was taken from the GPL-licensed program Emusic/J
@@ -24,7 +53,7 @@ underscore_chars = " '?[]()"
 
 ############################
 
-def XmlFactory(data):
+def create_xml(data):
   """Reads the EMP file and returns the decoded XML"""
   line = data.readline()
   
@@ -81,7 +110,7 @@ def XmlFactory(data):
   return decoded.getvalue()
 ### End of XmlFactory
 
-def DecodeXml( xmlstring ):
+def decode_xml( xmlstring ):
   """return a tuple of (server, tracklist)"""
   
   server = {}
@@ -123,7 +152,7 @@ def DecodeXml( xmlstring ):
   p.Parse( xmlstring )
   return ( server, tracklist )
 
-def GetUrl(server, track):
+def make_url(server, track):
   """Given a server element from the XML and a track element, get it"""
   #first construct the URL:
   url = "http://" + server["netname"] + server["location"]
@@ -156,25 +185,30 @@ def replace_metadata(orig, track):
 
 def make_path_fn(track):
   this_fn = replace_metadata(filename, track)
-  this_path = replace_metadata(path, track)
+  tmp_path = [replace_metadata(p, track) for p in path]
+  #filename's can't have os.sep in them:
+  this_fn = this_fn.replace(os.sep,"_");
+  tmp_path = [ p.replace(os.sep, "_") for p in tmp_path ]
+  this_path = base
+  for e in tmp_path:
+    this_path = os.path.join(this_path, e) 
   for c in underscore_chars:
     this_fn = this_fn.replace(c,"_");
     this_path = this_path.replace(c,"_");
-  #filename's can't have / in them:
-  this_fn = this_fn.replace("/","_");
   #Now use URLencoding on any nonsafe characters:
-  this_fn = urllib.quote(this_fn, "/,")
-  this_path = urllib.quote(this_path, "/,")
+  safe_special_chars = "_-()[],"
+  this_fn = urllib.quote(this_fn, safe_special_chars)
+  this_path = urllib.quote(this_path, os.sep + safe_special_chars)
   return (this_path, this_fn)
 
 def print_progress(tot):
   sys.stdout.write(".")
   sys.stdout.flush()
 
-decoded = XmlFactory( file( sys.argv[1] ) )
-(server, tracklist) = DecodeXml( decoded )
+decoded = create_xml( file( sys.argv[1] ) )
+(server, tracklist) = decode_xml( decoded )
 for track in tracklist:
-  url = GetUrl(server, track) 
+  url = make_url(server, track) 
   (this_path, this_fn) = make_path_fn(track);
   if not os.path.exists(this_path):
     os.makedirs(this_path)
