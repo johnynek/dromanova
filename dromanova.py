@@ -160,6 +160,8 @@ def make_path_fn(track):
   for c in underscore_chars:
     this_fn = this_fn.replace(c,"_");
     this_path = this_path.replace(c,"_");
+  #filename's can't have / in them:
+  this_fn = this_fn.replace("/","_");
   #Now use URLencoding on any nonsafe characters:
   this_fn = urllib.quote(this_fn, "/,")
   this_path = urllib.quote(this_path, "/,")
