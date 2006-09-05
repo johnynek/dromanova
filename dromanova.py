@@ -1,6 +1,6 @@
 #!/usr/bin/env python2.4
 
-import sys, base64, re, urllib2, os, os.path, urllib, string
+import sys, base64, re, urllib2, os, os.path, urllib, string, codecs
 from cStringIO import *
 import xml.parsers.expat
 
@@ -19,7 +19,7 @@ base = os.environ['HOME']
 #there should not be an path separator characters in any of the elements of path (e.g. "/" on unix).
 #if there are, they will be replaced with "_".  This is because we don't know if track metadata
 #will contain such characters.
-path = ["media", "mp3", "%a", "%l"]
+path = ["media", "audio", "mp3", "%a", "%l"]
 #This filenaming standard is good since lexigraphically it will usually do "the right thing"
 filename = "%a-%l-%n-%t.mp3"
 #replace the following characters with underscores
@@ -192,6 +192,9 @@ def make_path_fn(track):
   this_path = base
   for e in tmp_path:
     this_path = os.path.join(this_path, e) 
+  #Make sure any unicode characters are dealt with:
+  this_path = this_path.encode('ascii', 'replace')
+  this_fn = this_fn.encode('ascii', 'replace')
   for c in underscore_chars:
     this_fn = this_fn.replace(c,"_");
     this_path = this_path.replace(c,"_");
@@ -206,6 +209,8 @@ def print_progress(tot):
   sys.stdout.flush()
 
 decoded = create_xml( file( sys.argv[1] ) )
+#print decoded;
+#sys.exit(1)
 (server, tracklist) = decode_xml( decoded )
 for track in tracklist:
   url = make_url(server, track) 
@@ -215,7 +220,8 @@ for track in tracklist:
   fullname = os.path.join( this_path, this_fn )
   output = file(fullname, "w")
   f = urllib2.urlopen( url )
-  sys.stdout.write("Track: %s -> %s\n" % (track["title"], fullname))
+  sys.stdout.write("Track: %s -> %s\n" % (track["title"].encode('ascii','replace'),
+                                          fullname))
   tot = copy_file(f, output, print_progress)
   sys.stdout.write("\ntotal %i\n" % (tot))
   #got the file
