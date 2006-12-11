@@ -21,7 +21,7 @@ base = os.environ['HOME']
 #will contain such characters.
 path = ["media", "audio", "mp3", "%a", "%l"]
 #This filenaming standard is good since lexigraphically it will usually do "the right thing"
-filename = "%a-%l-%n-%t.mp3"
+filename = "%a-%n-%t.mp3"
 #replace the following characters with underscores
 underscore_chars = " *+!`'?[]()"
 
