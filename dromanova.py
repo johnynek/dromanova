@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.4
+#!/usr/bin/env python
 
 import sys, base64, re, urllib2, os, os.path, urllib, string, codecs
 from cStringIO import *
@@ -112,7 +112,6 @@ def create_xml(data):
 
 def decode_xml( xmlstring ):
   """return a tuple of (server, tracklist)"""
-  
   server = {}
   tracklist = []
   track = [{}] #Hack to make a closure work like we want..
@@ -149,12 +148,14 @@ def decode_xml( xmlstring ):
   p.StartElementHandler = start_el
   p.EndElementHandler = end_el
   p.CharacterDataHandler = char_data
-  p.Parse( xmlstring )
+  p.ParseFile( xmlstring )
   return ( server, tracklist )
 
 def make_url(server, track):
   """Given a server element from the XML and a track element, get it"""
   #first construct the URL:
+  if 'trackurl' in track:
+    return track['trackurl']
   url = "http://" + server["netname"] + server["location"]
   url = url.replace( "%fid", track["trackid"] )
   url = url.replace( "%f", track["filename"] )
@@ -208,10 +209,11 @@ def print_progress(tot):
   sys.stdout.write(".")
   sys.stdout.flush()
 
-decoded = create_xml( file( sys.argv[1] ) )
+#decoded = create_xml( file( sys.argv[1] ) )
 #print decoded;
 #sys.exit(1)
-(server, tracklist) = decode_xml( decoded )
+#(server, tracklist) = decode_xml( decoded )
+(server, tracklist) = decode_xml( file(sys.argv[1]) )
 for track in tracklist:
   url = make_url(server, track) 
   (this_path, this_fn) = make_path_fn(track);
