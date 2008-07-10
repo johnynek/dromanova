@@ -209,21 +209,25 @@ def print_progress(tot):
   sys.stdout.write(".")
   sys.stdout.flush()
 
-#decoded = create_xml( file( sys.argv[1] ) )
-#print decoded;
-#sys.exit(1)
-#(server, tracklist) = decode_xml( decoded )
-(server, tracklist) = decode_xml( file(sys.argv[1]) )
-for track in tracklist:
-  url = make_url(server, track) 
-  (this_path, this_fn) = make_path_fn(track);
-  if not os.path.exists(this_path):
-    os.makedirs(this_path)
-  fullname = os.path.join( this_path, this_fn )
-  output = file(fullname, "w")
-  f = urllib2.urlopen( url )
-  sys.stdout.write("Track: %s -> %s\n" % (track["title"].encode('ascii','replace'),
-                                          fullname))
-  tot = copy_file(f, output, print_progress)
-  sys.stdout.write("\ntotal %i\n" % (tot))
-  #got the file
+
+if __name__ == "__main__":
+  try:
+    (server, tracklist) = decode_xml( file(sys.argv[1]) )
+  except xml.parsers.expat.ExpatError:
+    decoded = create_xml( file( sys.argv[1] ) )
+    #print decoded;
+    #sys.exit(1)
+    (server, tracklist) = decode_xml( StringIO(decoded) )
+  for track in tracklist:
+    url = make_url(server, track) 
+    (this_path, this_fn) = make_path_fn(track);
+    if not os.path.exists(this_path):
+      os.makedirs(this_path)
+    fullname = os.path.join( this_path, this_fn )
+    output = file(fullname, "w")
+    f = urllib2.urlopen( url )
+    sys.stdout.write("Track: %s -> %s\n" % (track["title"].encode('ascii','replace'),
+                                            fullname))
+    tot = copy_file(f, output, print_progress)
+    sys.stdout.write("\ntotal %i\n" % (tot))
+    #got the file
